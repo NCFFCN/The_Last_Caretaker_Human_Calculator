@@ -57,7 +57,7 @@ When a failed combination is found, the solver adds another constraint and conti
 ## Search Settings
 
 The updated code stores the unlimited-search behavior directly in `main.py` with the local setting `UNLIMITED_SEARCH = True`.  
-The same file also defines `MAX_ATTEMPTS = 1000`, but that limit is only used when unlimited search is turned off.
+The same file also defines `MAX_ATTEMPTS = 10`, but that limit is only used when unlimited search is turned off.
 
 The code also supports both `Inventory.csv` and `inventory.csv` when loading the inventory file, which helps avoid filename case issues across environments.
 

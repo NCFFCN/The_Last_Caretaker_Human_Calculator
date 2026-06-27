@@ -1,7 +1,7 @@
 import os
 import sys
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -34,9 +34,12 @@ ALL_STAT_COLS = [
     "Wisdom",
 ]
 
-# Set unlimited search to True to allow the solver to keep searching for alternative solutions. Set to False to stop after reaching the maximum number of attempts.
+# Setting to True will allow the solver to keep searching for alternative combinations indefinitely until a valid one is found.
 UNLIMITED_SEARCH = True
-MAX_ATTEMPTS = 1000
+MAX_ATTEMPTS = 10
+
+# Setting to True will save the updated inventory to a new file named "Inventory2.csv" instead of overwriting the original inventory file.
+SAVE_AS_NEW_FILE = True
 
 BIG_M = 10000
 
@@ -50,6 +53,7 @@ class SolverItem:
     count: int
     stats: np.ndarray
     priority: float
+    kind: str
 
 
 @dataclass
@@ -165,17 +169,22 @@ def normalize_inventory(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    inventory_file = resolve_existing_file(["Inventory.csv", "inventory.csv"])
+    human_file = resolve_existing_file(["Humans.csv", "humans.csv", "Human.csv", "human.csv"])
+    food_file = resolve_existing_file(["Food.csv", "food.csv", "Foods.csv", "foods.csv"])
+    memory_file = resolve_existing_file(["Memories.csv", "memories.csv", "Memory.csv", "memory.csv"])
+    inventory_file = resolve_existing_file(
+        ["Inventory.csv", "inventory.csv", "Inventories.csv", "inventories.csv"]
+    )
 
     files = {
-        "Humans": "Humans.csv",
-        "Food": "Food.csv",
-        "Memories": "Memories.csv",
+        "Humans": human_file,
+        "Food": food_file,
+        "Memories": memory_file,
         "Inventory": inventory_file,
     }
 
     missing = []
-    for key, path in files.items():
+    for _, path in files.items():
         if not path or not os.path.exists(path):
             missing.append(path if path else "Inventory.csv or inventory.csv")
 
@@ -196,14 +205,15 @@ def apply_inventory(items_df: pd.DataFrame, inventory_df: pd.DataFrame, kind_fil
         result = items_df.copy()
         result["inventory_count"] = 0
         result["available"] = True
+        result["kind"] = kind_filter.lower()
         return result
 
     inv = inventory_df.copy()
     inv = inv[inv["kind"] == kind_filter.lower()]
-
     merged = items_df.merge(inv[["name", "inventory_count"]], on="name", how="left")
     merged["inventory_count"] = merged["inventory_count"].fillna(0).astype(int)
     merged["available"] = merged["inventory_count"] > 0
+    merged["kind"] = kind_filter.lower()
 
     return merged[merged["available"]].copy()
 
@@ -250,6 +260,7 @@ def build_solver_items(
                     count=int(row["inventory_count"]),
                     stats=row[ALL_STAT_COLS].to_numpy(dtype=int),
                     priority=float(row["Priority"]),
+                    kind="food",
                 )
             )
 
@@ -261,6 +272,7 @@ def build_solver_items(
                     count=int(row["inventory_count"]),
                     stats=row[ALL_STAT_COLS].to_numpy(dtype=int),
                     priority=float(row["Priority"]),
+                    kind="memory",
                 )
             )
 
@@ -272,7 +284,6 @@ def build_solver_items(
 
 def get_allowed_jobs(professions: pd.DataFrame, target: TargetInfo) -> List[str]:
     allowed_jobs = []
-
     for _, row in professions.iterrows():
         name = row["profession"]
         category = row["Category"]
@@ -293,7 +304,6 @@ def compute_triggered_professions(
     prof_categories = professions["Category"].tolist()
 
     triggered = []
-
     for i in range(len(prof_matrix)):
         requirements = prof_matrix[i]
         if np.sum(requirements) > 0 and all(
@@ -306,18 +316,23 @@ def compute_triggered_professions(
 
 
 def print_success(
-    item_strings: List[str],
+    food_lines: List[str],
+    memory_lines: List[str],
     total_items_count: int,
     current_stats: np.ndarray,
     target_stats: np.ndarray,
     triggered_profs: List[Tuple[str, str, int, int]],
 ):
-    print(t("success"))
-    print("-" * 60)
-    print(t("recipe"))
+    print(f"\n{t('success')}")
+    print("-" * 70)
 
-    for item_line in item_strings:
-        print(item_line)
+    print(f"\n{t('foods')}")
+    for line in food_lines:
+        print(line)
+
+    print(f"\n{t('memories')}")
+    for line in memory_lines:
+        print(line)
 
     print(f"\n{t('items', count=total_items_count)}")
     print(f"\n{t('stats')}")
@@ -327,11 +342,33 @@ def print_success(
             stat_name = display_stat_name(ALL_STAT_COLS[k])
             print(f" - {stat_name}: {current_stats[k]}/{target_stats[k]}")
 
-    print("-" * 60)
     print(f"\n{t('buildable')}")
-
     for p in triggered_profs:
         print(f" - {display_profession_name(p[0])}")
+
+
+def ask_to_deduct_inventory() -> bool:
+    answer = input(f"\n{t('deduct_inventory')} (y/N): ").strip().lower()
+    return answer in ("y", "yes")
+
+
+def save_inventory_change(inventory_df: pd.DataFrame, used_counts: dict, output_path: str):
+    updated = inventory_df.copy()
+
+    for item_name, used_count in used_counts.items():
+        mask = updated["name"].str.lower() == item_name.lower()
+        updated.loc[mask, "inventory_count"] = updated.loc[mask, "inventory_count"] - used_count
+
+    updated["inventory_count"] = updated["inventory_count"].clip(lower=0)
+
+    if not SAVE_AS_NEW_FILE:
+        output_path = "Inventory.csv"
+    else:
+        output_path = "Inventory2.csv"
+
+    updated.to_csv(output_path, sep=";", index=False)
+
+    return updated
 
 
 def solve_with_reasoning(
@@ -339,6 +376,7 @@ def solve_with_reasoning(
     professions: pd.DataFrame,
     foods: pd.DataFrame,
     memories: pd.DataFrame,
+    inv_df: pd.DataFrame,
 ) -> Optional[str]:
     professions = professions.copy()
     professions["profession"] = professions["profession"].astype(str).str.strip()
@@ -352,7 +390,6 @@ def solve_with_reasoning(
         return "NO_STATS"
 
     allowed_jobs = get_allowed_jobs(professions, target)
-
     prob = pulp.LpProblem("LastCaretaker", pulp.LpMinimize)
 
     x = {
@@ -380,7 +417,6 @@ def solve_with_reasoning(
 
     priority_penalty = pulp.lpSum(x[i] * useful_items[i].priority for i in range(len(useful_items)))
     total_items_var = pulp.lpSum(x[i] for i in range(len(useful_items)))
-
     prob += PRIORITY_WEIGHT * priority_penalty + ITEM_COUNT_WEIGHT * total_items_var + pulp.lpSum(excess_vars)
 
     attempt = 1
@@ -401,36 +437,62 @@ def solve_with_reasoning(
                 counts[i] = int(round(value))
 
         current_stats = np.zeros(len(ALL_STAT_COLS), dtype=int)
-        item_strings = []
+        food_lines = []
+        memory_lines = []
         total_items_count = 0
 
         for i, count in counts.items():
-            current_stats += useful_items[i].stats * count
+            item = useful_items[i]
+            current_stats += item.stats * count
             total_items_count += count
-            item_strings.append(f" - {display_item_name(useful_items[i].name)} x{count}")
+            line = f" - {display_item_name(item.name)} x{count}"
+            if item.kind == "food":
+                food_lines.append(line)
+            else:
+                memory_lines.append(line)
 
-        item_strings.sort()
+        food_lines.sort()
+        memory_lines.sort()
 
         triggered_profs = compute_triggered_professions(current_stats, professions)
         collaterals = [p[0] for p in triggered_profs if p[0] not in allowed_jobs]
 
         if not collaterals:
             print_success(
-                item_strings=item_strings,
+                food_lines=food_lines,
+                memory_lines=memory_lines,
                 total_items_count=total_items_count,
                 current_stats=current_stats,
                 target_stats=target.stats,
                 triggered_profs=triggered_profs,
             )
+
+            if ask_to_deduct_inventory():
+                used_counts = {useful_items[i].name: count for i, count in counts.items()}
+                save_inventory_change(inv_df, used_counts)
+
             return "SUCCESS"
 
-        print(f"{t('evaluating')} - {attempt}")
-        for item_line in item_strings:
-            print(item_line)
+        print(f"\n{t('evaluating')} - {attempt}")
+        print("-" * 70)
+
+        print(f"\n{t('foods')}")
+        if food_lines:
+            for line in food_lines:
+                print(line)
+        else:
+            print(" - None")
+
+        print(f"\n{t('memories')}")
+        if memory_lines:
+            for line in memory_lines:
+                print(line)
+        else:
+            print(" - None")
 
         translated_collaterals = [display_profession_name(p) for p in collaterals]
-        print(t("reason", jobs=", ".join(translated_collaterals)))
-        print(f"{t('retrying')}\n")
+        print(f"\n{t('reason', jobs=', '.join(translated_collaterals))}\n")
+        print(f"\n{t('retrying')}\n")
 
         bad_job_idx = next(p[3] for p in triggered_profs if p[0] in collaterals)
         bad_req = tuple(int(v) for v in prof_matrix[bad_job_idx].tolist())
@@ -467,6 +529,8 @@ def print_profession_list(prof_df: pd.DataFrame):
             print(f"\n{t('category_header', category=display_category_name(current_cat))}")
         print(f" - {display_profession_name(row['profession'])}")
 
+    print("\n" * 3)
+
 
 def main():
     prof_df, food_df, mem_df, inv_df = load_data()
@@ -488,12 +552,13 @@ def main():
         avail_foods = apply_inventory(food_df, inv_df, "food")
         avail_mems = apply_inventory(mem_df, inv_df, "memory")
 
-        print(f"\n{t('calculating', target=target)}")
+        print(f"\n{t('calculating', target=target)}\n")
         result = solve_with_reasoning(
             normalized_target,
             prof_df,
             avail_foods,
             avail_mems,
+            inv_df,
         )
 
         if result is None:
