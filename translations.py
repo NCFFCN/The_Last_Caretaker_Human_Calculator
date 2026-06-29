@@ -148,7 +148,7 @@ ITEM_TRANSLATIONS = {
         "Mirror": "鏡子",
         "Music Notes": "樂譜",
         "Mystery Box": "神秘盒",
-        "100m": "100米",
+        "PECO": "PECO",
         "Plans": "計劃書",
         "Porcine Vocal Interface": "豬語音介面",
         "Programming Manual": "程式設計手冊",

@@ -347,12 +347,7 @@ def print_success(
         print(f" - {display_profession_name(p[0])}")
 
 
-def ask_to_deduct_inventory() -> bool:
-    answer = input(f"\n{t('deduct_inventory')} (y/N): ").strip().lower()
-    return answer in ("y", "yes")
-
-
-def save_inventory_change(inventory_df: pd.DataFrame, used_counts: dict, output_path: str):
+def save_inventory(inventory_df: pd.DataFrame, used_counts: dict, output_path: str):
     updated = inventory_df.copy()
 
     for item_name, used_count in used_counts.items():
@@ -371,7 +366,7 @@ def save_inventory_change(inventory_df: pd.DataFrame, used_counts: dict, output_
     return updated
 
 
-def solve_with_reasoning(
+def find_combination(
     target_profession: str,
     professions: pd.DataFrame,
     foods: pd.DataFrame,
@@ -467,9 +462,8 @@ def solve_with_reasoning(
                 triggered_profs=triggered_profs,
             )
 
-            if ask_to_deduct_inventory():
-                used_counts = {useful_items[i].name: count for i, count in counts.items()}
-                save_inventory_change(inv_df, used_counts)
+            used_counts = {useful_items[i].name: count for i, count in counts.items()}
+            save_inventory(inv_df, used_counts)
 
             return "SUCCESS"
 
@@ -553,7 +547,7 @@ def main():
         avail_mems = apply_inventory(mem_df, inv_df, "memory")
 
         print(f"\n{t('calculating', target=target)}\n")
-        result = solve_with_reasoning(
+        result = find_combination(
             normalized_target,
             prof_df,
             avail_foods,
