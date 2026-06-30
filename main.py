@@ -33,7 +33,7 @@ ALL_STAT_COLS = [
     "Wisdom",
 ]
 
-LANG = "tc"  # Display language. "en" for English, "tc" for Traditional Chinese, "sc" for Simplified Chinese.
+LANG = "en"  # Display language. "en" for English, "tc" for Traditional Chinese, "sc" for Simplified Chinese.
 
 # True: Allow the solver to keep searching for alternative combinations indefinitely until a valid one is found.
 # False: Stop after MAX_ATTEMPTS if there are no valid combinations.
@@ -334,6 +334,7 @@ def get_allowed_jobs(professions: pd.DataFrame, target: TargetInfo) -> List[str]
 def compute_triggered_professions(
     current_stats: np.ndarray,
     professions: pd.DataFrame,
+    target_name: str | None = None,
 ) -> List[Tuple[str, str, int, int]]:
     prof_matrix = professions[ALL_STAT_COLS].to_numpy(dtype=int)
     prof_names = professions["Profession"].tolist()
@@ -341,11 +342,17 @@ def compute_triggered_professions(
 
     triggered = []
     for i in range(len(prof_matrix)):
+        name = prof_names[i]
+        category = prof_categories[i]
+
+        if name == "Star Child" and target_name != "Star Child":
+            continue
+
         requirements = prof_matrix[i]
         if np.sum(requirements) > 0 and all(
             current_stats[j] >= requirements[j] for j in range(len(requirements)) if requirements[j] > 0
         ):
-            triggered.append((prof_names[i], prof_categories[i], get_tier(prof_names[i]), i))
+            triggered.append((name, category, get_tier(name), i))
 
     triggered.sort(key=lambda item: (-item[2], item[0]))
     return triggered
@@ -647,7 +654,7 @@ def build_summary_for_target(
                 memory_items.append(line)
 
         triggered_profs = compute_triggered_professions(current_stats, professions)
-        collaterals = [p[0] for p in triggered_profs if p[0] not in allowed_jobs]
+        collaterals = [p for p in triggered_profs if p[0] not in allowed_jobs and p[1] != "Special"]
 
         if not collaterals:
             return {
@@ -661,7 +668,7 @@ def build_summary_for_target(
                 "used_counts": {useful_items[i].name: count for i, count in counts.items()},
             }
 
-        bad_job_idx = next(p[3] for p in triggered_profs if p[0] in collaterals)
+        bad_job_idx = collaterals[0][3]
         bad_req = tuple(int(v) for v in prof_matrix[bad_job_idx].tolist())
 
         if bad_req in seen_bad_jobs:
@@ -822,6 +829,26 @@ def main():
             print_profession_list(prof_df)
             continue
 
+        if user_input.lower() == "help":
+            print(f"{t('help')}")
+            continue
+
+        if user_input.lower() == "reload":
+            try:
+                prof_df, food_df, mem_df, inv_df = load_data()
+                print("\n" + "=" * 50)
+                print(f"{t('csv_reloaded')}")
+                print("=" * 50)
+            except Exception as e:
+                print(f"\n{t('read_fail'), e}")
+            continue
+
+        independent_calc = False
+        if user_input.startswith("?"):
+            independent_calc = True
+            user_input = user_input[1:].strip()
+            print(f"\n{t('inv_sep')}")
+
         targets = [t.strip() for t in user_input.replace("，", ",").split(",") if t.strip()]
 
         if not targets:
@@ -831,6 +858,9 @@ def main():
         successful_targets = []
 
         for target in targets:
+            if independent_calc:
+                current_inv_df = inv_df.copy()
+
             avail_foods = apply_inventory(food_df, current_inv_df, "food")
             avail_mems = apply_inventory(mem_df, current_inv_df, "memory")
 
@@ -854,17 +884,21 @@ def main():
                 print(t("no_stats"))
             elif result_status == "SUCCESS" and used_counts:
                 successful_targets.append(target)
-                for item_name, count in used_counts.items():
-                    mask = current_inv_df["Name"].str.lower() == item_name.lower()
-                    current_inv_df.loc[mask, "Count"] -= count
 
-                current_inv_df["Count"] = current_inv_df["Count"].clip(lower=0)
+                if not independent_calc:
+                    for item_name, count in used_counts.items():
+                        mask = current_inv_df["Name"].str.lower() == item_name.lower()
+                        current_inv_df.loc[mask, "Count"] -= count
+                    current_inv_df["Count"] = current_inv_df["Count"].clip(lower=0)
 
         if SHOW_SUMMARY and successful_targets:
             summary_inv_df = inv_df.copy()
             summary_results = []
 
             for target in successful_targets:
+                if independent_calc:
+                    summary_inv_df = inv_df.copy()
+
                 summary = build_summary_for_target(
                     target=target,
                     prof_df=prof_df,
@@ -874,10 +908,11 @@ def main():
                 )
                 if summary:
                     summary_results.append(summary)
-                    for item_name, count in summary["used_counts"].items():
-                        mask = summary_inv_df["Name"].str.lower() == item_name.lower()
-                        summary_inv_df.loc[mask, "Count"] -= count
-                    summary_inv_df["Count"] = summary_inv_df["Count"].clip(lower=0)
+                    if not independent_calc:
+                        for item_name, count in summary["used_counts"].items():
+                            mask = summary_inv_df["Name"].str.lower() == item_name.lower()
+                            summary_inv_df.loc[mask, "Count"] -= count
+                        summary_inv_df["Count"] = summary_inv_df["Count"].clip(lower=0)
 
             print_success_summary(summary_results)
 
