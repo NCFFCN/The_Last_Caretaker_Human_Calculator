@@ -31,6 +31,7 @@ ALL_STAT_COLS = [
     "Logic",
     "Patience",
     "Wisdom",
+    "Star Child"
 ]
 
 LANG = "en"  # Display language. "en" for English, "tc" for Traditional Chinese, "sc" for Simplified Chinese.
@@ -65,7 +66,7 @@ class SolverItem:
     count: int
     stats: np.ndarray
     priority: float
-    Kind: str
+    category: str
 
 
 @dataclass
@@ -202,6 +203,8 @@ def normalize_inventory(df: pd.DataFrame) -> pd.DataFrame:
     else:
         df["Count"] = 0
 
+    df = df.groupby(["Name", "inv_category"], as_index=False)["Count"].sum()
+
     return df
 
 
@@ -237,33 +240,36 @@ def load_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
     return humans, foods, memories, inventory
 
 
-def apply_inventory(items_df: pd.DataFrame, inventory_df: pd.DataFrame, kind_filter: str) -> pd.DataFrame:
+def apply_inventory(items_df: pd.DataFrame, inventory_df: pd.DataFrame, category_filter: str) -> pd.DataFrame:
     if inventory_df.empty:
         result = items_df.copy()
         result["Count"] = 0
         result["available"] = True
-        result["Kind"] = kind_filter.lower()
+        result["inv_category"] = category_filter.lower()
         return result
 
     inv = inventory_df.copy()
-    inv = inv[inv["Kind"] == kind_filter.lower()]
-    merged = items_df.merge(inv[["Name", "Count"]], on="Name", how="left")
+    
+    inv = inv[inv["inv_category"] == category_filter.lower()]
+
+    items_df_temp = items_df.copy()
+    items_df_temp["_match_name"] = items_df_temp["Name"].str.lower()
+    inv["_match_name"] = inv["Name"].str.lower()
+
+    merged = items_df_temp.merge(inv[["_match_name", "Count"]], on="_match_name", how="left")
     merged["Count"] = merged["Count"].fillna(0).astype(int)
     merged["available"] = merged["Count"] > 0
-    merged["Kind"] = kind_filter.lower()
-
+    merged["inv_category"] = category_filter.lower()
+    merged = merged.drop(columns=["_match_name"])
+    
     return merged[merged["available"]].copy()
 
 
 def get_tier(prof_name: str) -> int:
-    if "T1" in prof_name:
-        return 1
-    if "T2" in prof_name:
-        return 2
-    if "T3" in prof_name:
-        return 3
-    if "T4" in prof_name:
-        return 4
+    match = re.search(r"\bT([1-5])\b", prof_name, re.IGNORECASE)
+    if match:
+        return int(match.group(1))
+    
     return 5
 
 
@@ -297,7 +303,7 @@ def build_solver_items(
                     count=int(row["Count"]),
                     stats=row[ALL_STAT_COLS].to_numpy(dtype=int),
                     priority=float(row["Priority"]),
-                    Kind="food",
+                    category="food",
                 )
             )
 
@@ -309,7 +315,7 @@ def build_solver_items(
                     count=int(row["Count"]),
                     stats=row[ALL_STAT_COLS].to_numpy(dtype=int),
                     priority=float(row["Priority"]),
-                    Kind="memory",
+                    category="memory",
                 )
             )
 
@@ -345,10 +351,6 @@ def compute_triggered_professions(
     for i in range(len(prof_matrix)):
         name = prof_names[i]
         category = prof_categories[i]
-
-        if name == "Star Child" and target_name != "Star Child":
-            continue
-
         requirements = prof_matrix[i]
         if np.sum(requirements) > 0 and all(
             current_stats[j] >= requirements[j] for j in range(len(requirements)) if requirements[j] > 0
@@ -395,7 +397,7 @@ def print_success(
     print("\n" + "%" * 70)
 
 
-def save_inventory(inventory_df: pd.DataFrame, used_counts: dict):
+def save_inventory(inventory_df: pd.DataFrame, used_counts: dict, session_timestamp: str = None):
     updated = inventory_df.copy()
 
     for item_name, used_count in used_counts.items():
@@ -407,7 +409,8 @@ def save_inventory(inventory_df: pd.DataFrame, used_counts: dict):
     if not SAVE_AS_NEW_FILE:
         output_path = "Inventory.csv"
     else:
-        output_path = f"Inventory2_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+        ts = session_timestamp or datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_path = f"Inventory2_{ts}.csv"
 
     updated.to_csv(output_path, sep=";", index=False)
 
@@ -420,6 +423,7 @@ def find_combination(
     foods: pd.DataFrame,
     memories: pd.DataFrame,
     inv_df: pd.DataFrame,
+    session_timestamp: str = None,
 ) -> Tuple[Optional[str], Optional[dict]]:
     professions = professions.copy()
     professions["Profession"] = professions["Profession"].astype(str).str.strip()
@@ -484,12 +488,12 @@ def find_combination(
             current_stats += item.stats * count
             total_items_count += count
             line = f" - {display_item_name(item.name)} x{count}"
-            if item.Kind == "food":
+            if item.category == "food":
                 food_lines.append(line)
             else:
                 memory_lines.append(line)
 
-        triggered_profs = compute_triggered_professions(current_stats, professions)
+        triggered_profs = compute_triggered_professions(current_stats, professions, target_info.name)
         collaterals = [p[0] for p in triggered_profs if p[0] not in allowed_jobs]
 
         if not collaterals:
@@ -506,7 +510,7 @@ def find_combination(
             used_counts = {useful_items[i].name: count for i, count in counts.items()}
 
             if DEDUCT_INVENTORY:
-                save_inventory(inv_df, used_counts)
+                save_inventory(inv_df, used_counts, session_timestamp)
 
             return "SUCCESS", used_counts
 
@@ -571,7 +575,7 @@ def format_summary_rows(items: List[str], items_per_row: int, col_width: int = 3
     return rows
 
 
-def build_summary_for_target(
+def build_summary(
     target: str,
     prof_df: pd.DataFrame,
     food_df: pd.DataFrame,
@@ -649,12 +653,12 @@ def build_summary_for_target(
             current_stats += item.stats * count
             total_items_count += count
             line = f" - {display_item_name(item.name)} x{count}"
-            if item.Kind == "food":
+            if item.category == "food":
                 food_items.append(line)
             else:
                 memory_items.append(line)
 
-        triggered_profs = compute_triggered_professions(current_stats, professions)
+        triggered_profs = compute_triggered_professions(current_stats, professions, target_info.name)
         collaterals = [p for p in triggered_profs if p[0] not in allowed_jobs and p[1] != "Special"]
 
         if not collaterals:
@@ -706,12 +710,12 @@ def build_summary_sections(summary: dict) -> dict:
         "divider": ["-" * 30],
         "foods_title": [f"{t('foods')}"],
         "foods": summary["food_items"] if summary["food_items"] else [" - None"],
-        "memories_title": [f"{t('memories')}"],
+        "memories_title": [f"\n{t('memories')}"],
         "memories": summary["memory_items"] if summary["memory_items"] else [" - None"],
-        "items": [t("items", count=summary["total_items_count"])],
-        "stats_title": [f"{t('stats')}"],
+        "items": [f"\n{t("items", count=summary["total_items_count"])}"],
+        "stats_title": [f"\n{t('stats')}"],
         "stats": stats_lines if stats_lines else [" - None"],
-        "buildable_title": [f"{t('buildable')}"],
+        "buildable_title": [f"\n{t('buildable')}"],
         "buildable": buildable_lines if buildable_lines else [" - None"],
     }
 
@@ -731,7 +735,7 @@ def render_parallel_section(section_name: str, chunk_sections: List[dict], block
         print(row_line.rstrip())
 
 
-def print_success_summary(summary_results: List[dict]):
+def print_summary(summary_results: List[dict]):
     if not summary_results:
         return
 
@@ -857,7 +861,7 @@ def main():
 
         current_inv_df = inv_df.copy()
         successful_targets = []
-
+        current_session_ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         for target in targets:
             if independent_calc:
                 current_inv_df = inv_df.copy()
@@ -872,11 +876,7 @@ def main():
             print("=" * 70)
 
             result_status, used_counts = find_combination(
-                normalized_target,
-                prof_df,
-                avail_foods,
-                avail_mems,
-                current_inv_df,
+                normalized_target, prof_df, avail_foods, avail_mems, current_inv_df, current_session_ts
             )
 
             if result_status is None:
@@ -900,7 +900,7 @@ def main():
                 if independent_calc:
                     summary_inv_df = inv_df.copy()
 
-                summary = build_summary_for_target(
+                summary = build_summary(
                     target=target,
                     prof_df=prof_df,
                     food_df=food_df,
@@ -915,7 +915,7 @@ def main():
                             summary_inv_df.loc[mask, "Count"] -= count
                         summary_inv_df["Count"] = summary_inv_df["Count"].clip(lower=0)
 
-            print_success_summary(summary_results)
+            print_summary(summary_results)
 
 
 if __name__ == "__main__":
