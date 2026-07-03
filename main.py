@@ -36,7 +36,7 @@ ALL_STAT_COLS = [
     "Star Child",
 ]
 
-LANG = "en"  # Display language. "en" for English, "tc" for Traditional Chinese, "sc" for Simplified Chinese.
+LANG = "tc"  # Display language. "en" for English, "tc" for Traditional Chinese, "sc" for Simplified Chinese.
 
 # True: Allow the solver to keep searching for alternative combinations indefinitely until a valid one is found.
 # False: Stop after MAX_ATTEMPTS if there are no valid combinations.
@@ -45,7 +45,7 @@ MAX_ATTEMPTS = 20
 
 # True: Deduct the used items from the inventory after a successful combination is found.
 # False: Do not modify the inventory after a successful combination is found.
-DEDUCT_INVENTORY = False
+DEDUCT_INVENTORY = True
 
 # True: Save the updated inventory to a new file.
 # False: Overwrite the existing inventory file.
@@ -233,6 +233,9 @@ class CsvRepository:
     @staticmethod
     def normalize_inventory(df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
+
+        df["_original_order"] = range(len(df))
+
         df = df.rename(columns={"Category": "inv_category"})
 
         if "Name" in df.columns:
@@ -248,7 +251,11 @@ class CsvRepository:
         else:
             df["Count"] = 0
 
-        return df.groupby(["Name", "inv_category"], as_index=False)["Count"].sum()
+        grouped = df.groupby(["Name", "inv_category"], as_index=False).agg(
+            {"Count": "sum", "_original_order": "min"}
+        )
+
+        return grouped.sort_values("_original_order").drop(columns=["_original_order"]).reset_index(drop=True)
 
     @classmethod
     def load_data(cls) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -492,13 +499,15 @@ class InventoryService:
     ):
         updated = cls.apply_used_counts_to_inventory(inventory_df, used_counts)
 
+        save_df = updated.rename(columns={"inv_category": "Category"})
+
         if not SAVE_AS_NEW_FILE:
             output_path = "Inventory.csv"
         else:
             ts = session_timestamp or datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            output_path = f"Inventory2_{ts}.csv"
+            output_path = f"Inventory_{ts}.csv"
 
-        updated.to_csv(output_path, sep=";", index=False)
+        save_df.to_csv(output_path, sep=";", index=False)
         return updated
 
 

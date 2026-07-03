@@ -156,7 +156,7 @@ All translated text are defined in `translations.py`.
 - Changed data file naming
 
 ### v0.3.0
-- Improve data file saving mechanism
+- Improved data file saving mechanism
 - Optimize translation
 
 ### v0.3.1
@@ -217,3 +217,6 @@ All translated text are defined in `translations.py`.
 
 ### v0.7.4
 - Fixed the keys in the `RAW_TO_EFF` dictionary were incorrect.
+
+### v0.7.5
+- Fixed `inventory.csv` column name mismatch and ordering issues.

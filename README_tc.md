@@ -215,3 +215,6 @@ python main.py
 
 ### v0.7.4
 - 修正了 `RAW_TO_EFF` 字典中鍵不正確的問題
+
+### v0.8.0
+- 修正了 `inventory.csv` 列名不符和排序問題
