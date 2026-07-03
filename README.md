@@ -35,10 +35,10 @@ At the prompt, you can:
 
 Example:
 ```text
-Enter Target Profession (or 'help' to see full command): Guard T2
+Enter Target Profession (or 'help' to see all command): Guard T2
 ```
 ```text
-Enter Target Profession (or 'help' to see full command): Guard, Site Guardian
+Enter Target Profession (or 'help' to see all command): Guard, Site Guardian
 ```
 
 Note: The profession name should be entered in the display language set in `main.py` (English, Traditional Chinese, or Simplified Chinese).
@@ -49,7 +49,7 @@ If you want to calculate each target **independently** (i.e., assuming an unlimi
 
 Example:
 ```text
-Enter Target Profession (or 'help' to see full command): ?Guard T2, Site Guardian
+Enter Target Profession (or 'help' to see all command): ?Guard T2, Site Guardian
 ```
 
 The prompt will pop out:
@@ -207,3 +207,6 @@ All translated text are defined in `translations.py`.
 ### v0.7.1
 - Added "Version History" sections to all `README.md` files
 - Optimize translation
+
+### v0.7.2
+- Updated `README.md`
