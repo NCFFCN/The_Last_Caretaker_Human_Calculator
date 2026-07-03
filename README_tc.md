@@ -5,16 +5,13 @@
 一個用於解決《The last Caretaker》中職業組合問題的輕量級命令列工具。它使用整數線性最佳化模型搜尋目標職業的有效物品組合，同時避免不必要的附帶職業。
 
 ## CSV 檔案
-
 - 人類數據: `Human.csv` or `human.csv` or `Humans.csv` or `humans.csv`.
 - 食物數據: `Food.csv` or `food.csv` or `Foods.csv` or `foods.csv`.
 - 記憶數據: `Memory.csv` or `memory.csv` or `Memories.csv` or `memories.csv`.
 - 庫存數據: `Inventory.csv` or `inventory.csv` or `Inventories.csv` or `inventories.csv`.
 
 ## 使用要求
-
 安裝所需的 Python 套件:
-
 ```bash
 pip install -r requirements.txt
 ```
@@ -22,15 +19,12 @@ pip install -r requirements.txt
 目前依賴項清單包括 `numpy`、`pandas` 和 `pulp`。
 
 ## 用法
-
 從專案資料夾執行計算器:
-
 ```bash
 python main.py
 ```
 
 在提示字元處，您可以:
-
 - 輸入職業名稱，例如 `人類守護者 T4` 或 `人類守護者` 。
 - 輸入多個目標，以逗號分隔，例如: `守衛 T2，站點守衛 T3` 或 `守衛，站點守衛` 。
 - 輸入 `list` 以顯示所有按類別分組的可用職業。
@@ -49,11 +43,8 @@ python main.py
 注意：職業名稱應使用 `main.py` 中設定的顯示語言（英文、繁體中文或簡體中文）輸入。
 
 ### 獨立計算模式（臨時庫存）
-
 預設情況下，當您輸入多個目標（例如， `守衛 T2, 空間站衛士` ）時，工具採用**演繹式庫存**方法。這意味著，如果第一個目標消耗了您庫存中的某些物品，這些物品將被標記為已使用，並且在同一會話中無法供後續目標使用。這模擬了資源有限的真實場景。
-
 如果您希望**獨立地**計算每個目標（假設每次計算時庫存無限或全新），請在輸入前加上 `?`。
-
 例子:
 ```text
 請輸入目標職業 (或輸入「help」查看所有指令): ?守衛 T2, 空間站衛士
@@ -118,41 +109,99 @@ python main.py
 ```
 
 ## 搜尋邏輯
-
 計算器優先考慮：
-
 1. 自訂物品優先順序（例如: 泰迪熊=1，灰燼之書=3）
 2. 物品總數
 3. 剩餘屬性超出總數
 4. 可創造非同一類別職業
 
 ## 搜尋設定
-
 搜尋行為直接在 `main.py` 中控制：
-
 - `UNLIMITED_SEARCH` : 表示計算器是否無限搜尋。(預設 `False`)
 - `MAX_ATTEMPTS` : 定義了 `UNLIMITED_SEARCH = False` 時的最大搜尋嘗試次數。(預設 `20`)
 - `PRIORITY_WEIGHT` 和 `ITEM_COUNT_WEIGHT` 控制計算器對低優先級物品和項目數解決方案的偏好程度。
 - `BIG_M` 用於排除非同一類別職業組合。
 
 ## 庫存設定
-
 庫存更新行為也在 `main.py` 中控制：
-
 - `DEDUCT_INVENTORY` : 表示找到成功組合後會不會修改庫存檔案。(預設 `False`)
 - `SAVE_AS_NEW_FILE` : 表示 `DEDUCT_INVENTORY = True` 後，更新後的庫存將保存到一個新的帶有時間戳記的 CSV 檔案中，而不是覆蓋原始檔案。(預設 `True`)
 
 ## 語言
-
 顯示語言由 `main.py` 檔案中的 `LANG` 設定控制：
-
 - `"en"` 表示英文。
 - `"tc"` 表示繁體中文。
 - `"sc"` 表示簡體中文。
-
 所有翻譯文字均在 `translations.py` 檔案中定義。
 
 ## 注意
-
 - 計算器僅考慮庫存文件中存在的物品。
 - 屬性清單由 `ALL_STAT_COLS` 定義，因此 CSV 檔案的標題和程式碼必須保持一致才能正確匹配。
+
+## 版本歷史
+### v0.1.0
+- 初始版本
+
+### v0.1.1
+- 優化翻譯
+
+### v0.2.0
+- 改進搜尋設定參數
+- 改進了檔案名稱處理
+
+### v0.2.1
+- 更改資料檔名稱
+
+### v0.3.0
+- 改進資料檔案存檔機制
+- 優化翻譯
+
+### v0.3.1
+- 改進了在儲存新`inventory.csv`檔案時包含時間戳記
+
+### v0.4.0
+- 改進腳本主要設置
+- 改進資料載入和處理機制
+- 改進職業輸入處理
+- 改善物品欄管理
+- 改進組合查找邏輯
+- 新增「成功組合總結」機制
+- 改進輸出格式
+- 新增簡體中文翻譯
+- 優化翻譯
+- 更新 `README.md`
+
+### v0.5.0
+- 在 `Human.csv` 中新增了名為「星之子」的特殊職業類別
+- 在 `Memory.csv` 和 `Inventory.csv` 中新增了名為「星之子」的特殊物品
+- 將 `Memory.csv` 和 `Inventory.csv` 中的「PECO」擴展為「Keys To Imagination」和「PECO田徑」系列
+- 修復了多個錯誤
+- 新增了更多指令選項（help、reload、?）
+- 擴展了介面翻譯支持
+- 優化翻譯以符合遊戲內專有名稱
+- 更新了 `README.md`
+
+### v0.5.1
+- 規範了 `inventory.csv` 列名稱
+
+### v0.5.2
+- 修復了多個錯誤
+
+### v0.5.3
+- 更新了 `README.md`
+
+### v0.6.0
+- 更新了 `README.md`
+- 新增了 `README_tc.md` 和 `README_sc.md`
+- 更新了 `Human.csv` 數據
+- 擴展翻譯以支援介面
+- 修復了多個錯誤
+
+### v0.7.0
+- 優化了翻譯
+- 增加了屬性值超過 200 後計算衰減懲罰的邏輯
+- 改進了整體程式碼管理和結構（`main.py` 已重新編譯）
+
+### v0.7.1
+- 在所有 `README.md` 檔案中新增了「版本歷史」部分
+- 優化翻譯

@@ -5,16 +5,13 @@
 一个用于解决《The last Caretaker》中职业组合问题的轻量级命令行工具。它使用整数线性优化模型搜索目标职业的有效物品组合，同时避免不必要的附带职业。
 
 ## CSV 文件
-
 - 人类数据: `Human.csv` or `human.csv` or `Humans.csv` or `humans.csv`.
 - 食物数据: `Food.csv` or `food.csv` or `Foods.csv` or `foods.csv`.
 - 记忆数据: `Memory.csv` or `memory.csv` or `Memories.csv` or `memories.csv`.
 - 库存数据: `Inventory.csv` or `inventory.csv` or `Inventories.csv` or `inventories.csv`.
 
 ## 使用要求
-
 安装所需的 Python 包:
-
 ```bash
 pip install -r requirements.txt
 ```
@@ -22,15 +19,12 @@ pip install -r requirements.txt
 当前依赖列表包括 `numpy`、`pandas` 和 `pulp`。
 
 ## 用法
-
 从项目文件夹运行计算器:
-
 ```bash
 python main.py
 ```
 
 在提示符下，您可以:
-
 - 输入职业名称，例如 `人类守护者 T4` 或 `人类守护者`。
 - 输入多个目标，以逗号分隔，例如: `守卫 T2，站点守护 T3` 或 `守卫，站点守护`。
 - 输入 `list` 以显示所有按类别分组的可用职业。
@@ -49,9 +43,7 @@ python main.py
 注意：职业名称应使用 `main.py` 中设置的显示语言（英文、繁体中文或简体中文）输入。
 
 ### 独立计算模式（临时库存）
-
 默认情况下，当您输入多个目标（例如， `守卫 T2, 空间站卫士`）时，工具采用**演绎式库存**方法。这意味着，如果第一个目标消耗了您库存中的某些物品，这些物品将被标记为已使用，并且在同一会话中无法供后续目标使用。这模拟了资源有限的真实场景。
-
 如果您希望**独立地**计算每个目标（假设每次计算时库存无限或全新），请在输入前加上 `?`。
 
 例子:
@@ -118,41 +110,99 @@ python main.py
 ```
 
 ## 搜索逻辑
-
 计算器优先考虑：
-
 1. 自定义物品优先顺序（例如: 泰迪熊=1，灰烬之书=3）
 2. 物品总数
 3. 剩余属性超过总数
 4. 可创建不同类别职业
 
 ## 搜索设置
-
 搜索行为直接在 `main.py` 中控制：
-
 - `UNLIMITED_SEARCH` : 表示计算器是否无限搜索。(默认 `False`)
 - `MAX_ATTEMPTS` : 定义了 `UNLIMITED_SEARCH = False` 时的最大搜索尝试次数。(默认 `20`)
 - `PRIORITY_WEIGHT` 和 `ITEM_COUNT_WEIGHT` 控制计算器对低优先级物品和项目数解决方案的偏好程度。
 - `BIG_M` 用于排除非同一类别职业组合。
 
 ## 库存设置
-
 库存更新行为也在 `main.py` 中控制：
-
 - `DEDUCT_INVENTORY` : 表示找到成功组合后会不会修改库存文件。(默认 `False`)
 - `SAVE_AS_NEW_FILE` : 表示 `DEDUCT_INVENTORY = True` 后，更新后的库存将保存到一个带有时间戳的新 CSV 文件中，而不是覆盖原始文件。(默认 `True`)
 
 ## 语言
-
 显示语言由 `main.py` 文件中的 `LANG` 设置控制：
-
 - `"en"` 表示英文。
 - `"tc"` 表示繁体中文。
 - `"sc"` 表示简体中文。
-
 所有翻译文本均在 `translations.py` 文件中定义。
 
 ## 注意
-
 - 计算器仅考虑库存文件中存在的物品。
 - 属性列表由 `ALL_STAT_COLS` 定义，因此 CSV 标题和代码必须保持一致才能正确匹配。
+
+## 版本历史
+### v0.1.0
+- 初始版本
+
+### v0.1.1
+- 优化翻译
+
+### v0.2.0
+- 改进搜寻设定参数
+- 改进了档案名称处理
+
+### v0.2.1
+- 更改资料档名称
+
+### v0.3.0
+- 改进资料档案存档机制
+- 优化翻译
+
+### v0.3.1
+- 改进了在储存新`inventory.csv`档案时包含时间戳记
+
+### v0.4.0
+- 改进脚本主要设置
+- 改进资料载入和处理机制
+- 改进职业输入处理
+- 改善物品栏管理
+- 改进组合查找逻辑
+- 新增「成功组合总结」机制
+- 改进输出格式
+- 新增简体中文翻译
+- 优化翻译
+- 更新 `README.md`
+
+### v0.5.0
+- 在 `Human.csv` 中新增了名为「星之子」的特殊职业类别
+- 在 `Memory.csv` 和 `Inventory.csv` 中新增了名为「星之子」的特殊物品
+- 将 `Memory.csv` 和 `Inventory.csv` 中的「PECO」扩展为「Keys To Imagination」和「PECO田径」系列
+- 修复了多个错误
+- 新增了更多指令选项（help、reload、?）
+- 扩展了介面翻译支持
+- 优化翻译以符合游戏内专有名称
+- 更新了 `README.md`
+
+### v0.5.1
+- 规范了 `inventory.csv` 列名称
+
+### v0.5.2
+- 修复了多个错误
+
+### v0.5.3
+- 更新了 `README.md`
+
+### v0.6.0
+- 更新了 `README.md`
+- 新增了 `README_tc.md` 和 `README_sc.md`
+- 更新了 `Human.csv` 数据
+- 扩展翻译以支援介面
+- 修复了多个错误
+
+### v0.7.0
+- 优化了翻译
+- 增加了属性值超过 200 后计算衰减惩罚的逻辑
+- 改进了整体程式码管理和结构（`main.py` 已重新编译）
+
+### v0.7.1
+- 在所有 `README.md` 档案中新增了「版本历史」部分
+- 优化翻译
