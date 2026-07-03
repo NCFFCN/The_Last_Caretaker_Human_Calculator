@@ -214,3 +214,6 @@ All translated text are defined in `translations.py`.
 
 ### v0.7.3
 - Updated all `README.md` files
+
+### v0.7.4
+- Fixed the keys in the `RAW_TO_EFF` dictionary were incorrect.

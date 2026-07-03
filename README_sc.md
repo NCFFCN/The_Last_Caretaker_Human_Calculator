@@ -210,3 +210,9 @@ python main.py
 
 ### v0.7.2
 - 更新了 `README.md`
+
+### v0.7.3
+- 更新了所有 `README.md` 文件
+
+### v0.7.4
+- 修正了 `RAW_TO_EFF` 字典中键不正确的问题
