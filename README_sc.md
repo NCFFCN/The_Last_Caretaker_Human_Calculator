@@ -217,5 +217,8 @@ python main.py
 ### v0.7.4
 - 修正了 `RAW_TO_EFF` 字典中键不正确的问题
 
-### v0.8.0
+### v0.7.5
 - 修复了 `inventory.csv` 列名不匹配和排序问题
+
+### v0.8.0
+- 现在，如果 `DEDUCT_INVENTORY = True`, `SAVE_AS_NEW_FILE = False`, 不在独立计算模式下, 并且有成功的目标，它将自动重新载入 `inventory.csv`

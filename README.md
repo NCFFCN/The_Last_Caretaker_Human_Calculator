@@ -220,3 +220,6 @@ All translated text are defined in `translations.py`.
 
 ### v0.7.5
 - Fixed `inventory.csv` column name mismatch and ordering issues.
+
+### v0.8.0
+- Now if `DEDUCT_INVENTORY = True`, `SAVE_AS_NEW_FILE = False`, not in independent calculation mode and there are successful targets, it will reload the `inventory.csv` automatically

@@ -36,7 +36,7 @@ ALL_STAT_COLS = [
     "Star Child",
 ]
 
-LANG = "tc"  # Display language. "en" for English, "tc" for Traditional Chinese, "sc" for Simplified Chinese.
+LANG = "en"  # Display language. "en" for English, "tc" for Traditional Chinese, "sc" for Simplified Chinese.
 
 # True: Allow the solver to keep searching for alternative combinations indefinitely until a valid one is found.
 # False: Stop after MAX_ATTEMPTS if there are no valid combinations.
@@ -45,7 +45,7 @@ MAX_ATTEMPTS = 20
 
 # True: Deduct the used items from the inventory after a successful combination is found.
 # False: Do not modify the inventory after a successful combination is found.
-DEDUCT_INVENTORY = True
+DEDUCT_INVENTORY = False
 
 # True: Save the updated inventory to a new file.
 # False: Overwrite the existing inventory file.
@@ -501,11 +501,11 @@ class InventoryService:
 
         save_df = updated.rename(columns={"inv_category": "Category"})
 
-        if not SAVE_AS_NEW_FILE:
-            output_path = "Inventory.csv"
-        else:
+        if SAVE_AS_NEW_FILE:
             ts = session_timestamp or datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             output_path = f"Inventory_{ts}.csv"
+        else:
+            output_path = "Inventory.csv"
 
         save_df.to_csv(output_path, sep=";", index=False)
         return updated
@@ -1043,6 +1043,12 @@ class App:
                             )
 
                 SummaryRenderer.print_summary(summary_results)
+
+            if DEDUCT_INVENTORY and not SAVE_AS_NEW_FILE and not independent_calc and successful_targets:
+                self.inv_df = current_inv_df.copy()
+                print("\n" + "=" * 50)
+                print(f"{I18n.t('csv_reloaded')}")
+                print("=" * 50)
 
 
 def main():
