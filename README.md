@@ -134,10 +134,11 @@ The display language is controlled by the `LANG` setting in `main.py`:
 - `"en"` for English.
 - `"tc"` for Traditional Chinese.
 - `"sc"` for Simplified Chinese.
+
 All translated text are defined in `translations.py`.
 
 ## Notes
-- Only items available in the inventory file are considered by the solver.
+- Only items available in the `inventory.csv` file are considered by the solver.
 - The stat list is defined by `ALL_STAT_COLS`, so the CSV headers and code must stay aligned for correct matching.
 
 ## Version History
@@ -210,3 +211,6 @@ All translated text are defined in `translations.py`.
 
 ### v0.7.2
 - Updated `README.md`
+
+### v0.7.3
+- Updated all `README.md` files
