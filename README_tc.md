@@ -138,6 +138,11 @@ python main.py
 ## 注意
 - 計算器僅考慮 `inventory.csv` 中存在的物品。
 - 屬性清單由 `ALL_STAT_COLS` 定義，因此 CSV 檔案的標題和程式碼必須保持一致才能正確匹配。
+- 如果以下條件成立，它將自動重新載入最新的庫存。
+  - `DEDUCT_INVENTORY = True`
+  - `SAVE_AS_NEW_FILE = False`
+  - 不在獨立計算模式下
+  - 有成功的目標
 
 ## 版本歷史
 ### v0.1.0
@@ -200,7 +205,7 @@ python main.py
 
 ### v0.7.0
 - 優化了翻譯
-- 增加了屬性值超過 200 後計算衰減懲罰的邏輯
+- 新增了屬性值超過 200 後計算衰減懲罰的邏輯
 - 改進了整體程式碼管理和結構（`main.py` 已重新編譯）
 
 ### v0.7.1
@@ -208,16 +213,14 @@ python main.py
 - 優化翻譯
 
 ### v0.7.2
-- 更新了 `README.md`
-
-### v0.7.3
 - 更新了所有 `README.md` 文件
 
+### v0.7.3
+- 修復了 `RAW_TO_EFF` 字典中鍵不正確的問題
+- 修復了 `inventory.csv` 列名不符和排序問題
+
 ### v0.7.4
-- 修正了 `RAW_TO_EFF` 字典中鍵不正確的問題
+- 新增 - 如果 `DEDUCT_INVENTORY = True`, `SAVE_AS_NEW_FILE = False`, 不在獨立計算模式下, 並且有成功的目標，它將自動重新載入最新的庫存
 
-### v0.7.5
-- 修正了 `inventory.csv` 列名不符和排序問題
-
-### v0.8.0
-- 現在，如果 `DEDUCT_INVENTORY = True`, `SAVE_AS_NEW_FILE = False`, 不在獨立計算模式下, 並且有成功的目標，它將自動重新載入 `inventory.csv`
+### 0.7.5
+- 修復了 `量子物理學家 T4` 的 `智力` 數值

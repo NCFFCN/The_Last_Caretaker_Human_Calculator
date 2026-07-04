@@ -139,6 +139,11 @@ python main.py
 ## 注意
 - 计算器仅考虑 `inventory.csv` 中存在的物品。
 - 属性列表由 `ALL_STAT_COLS` 定义，因此 CSV 标题和代码必须保持一致才能正确匹配。
+- 如果以下条件成立，它将自动重新载入最新的库存。
+  - `DEDUCT_INVENTORY = True`
+  - `SAVE_AS_NEW_FILE = False`
+  - 不在独立计算模式下
+  - 有成功的目标
 
 ## 版本历史
 ### v0.1.0
@@ -201,7 +206,7 @@ python main.py
 
 ### v0.7.0
 - 优化了翻译
-- 增加了属性值超过 200 后计算衰减惩罚的逻辑
+- 新增了属性值超过 200 后计算衰减惩罚的逻辑
 - 改进了整体程式码管理和结构（`main.py` 已重新编译）
 
 ### v0.7.1
@@ -209,16 +214,14 @@ python main.py
 - 优化翻译
 
 ### v0.7.2
-- 更新了 `README.md`
-
-### v0.7.3
 - 更新了所有 `README.md` 文件
 
-### v0.7.4
-- 修正了 `RAW_TO_EFF` 字典中键不正确的问题
-
-### v0.7.5
+### v0.7.3
+- 修复了 `RAW_TO_EFF` 字典中键不正确的问题
 - 修复了 `inventory.csv` 列名不匹配和排序问题
 
-### v0.8.0
-- 现在，如果 `DEDUCT_INVENTORY = True`, `SAVE_AS_NEW_FILE = False`, 不在独立计算模式下, 并且有成功的目标，它将自动重新载入 `inventory.csv`
+### v0.7.4
+- 新增 - 如果 `DEDUCT_INVENTORY = True`, `SAVE_AS_NEW_FILE = False`, 不在独立计算模式下, 并且有成功的目标，它将自动重新载入最新的库存
+
+### v0.7.5
+- 修复了 `量子物理学家 T4` 的 `智力` 数值

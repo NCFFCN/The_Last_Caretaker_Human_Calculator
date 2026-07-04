@@ -140,6 +140,11 @@ All translated text are defined in `translations.py`.
 ## Notes
 - Only items available in the `inventory.csv` file are considered by the solver.
 - The stat list is defined by `ALL_STAT_COLS`, so the CSV headers and code must stay aligned for correct matching.
+- It will automatically reload the latest inventory if the following conditions are met.
+  - `DEDUCT_INVENTORY = True`
+  - `SAVE_AS_NEW_FILE = False`
+  - Not in independent calculation mode
+  - There are successful targets
 
 ## Version History
 ### v0.1.0
@@ -210,16 +215,14 @@ All translated text are defined in `translations.py`.
 - Optimize translation
 
 ### v0.7.2
-- Updated `README.md`
-
-### v0.7.3
 - Updated all `README.md` files
 
-### v0.7.4
+### v0.7.3
 - Fixed the keys in the `RAW_TO_EFF` dictionary were incorrect.
-
-### v0.7.5
 - Fixed `inventory.csv` column name mismatch and ordering issues.
 
-### v0.8.0
-- Now if `DEDUCT_INVENTORY = True`, `SAVE_AS_NEW_FILE = False`, not in independent calculation mode and there are successful targets, it will reload the `inventory.csv` automatically
+### v0.7.4
+- Added - if `DEDUCT_INVENTORY = True`, `SAVE_AS_NEW_FILE = False`, not in independent calculation mode and there are successful targets, it will reload the latest inventory automatically
+
+### v0.7.5
+- Fix the `Intelligence` value for `Quantum Physicist T4`
