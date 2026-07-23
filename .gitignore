@@ -1,2 +1,4 @@
 /.venv
-/__pycache__
+/Scripts/__pycache__
+/main copy.py
+/Stats_exceed_200.py

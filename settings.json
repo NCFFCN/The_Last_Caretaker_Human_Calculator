@@ -1,0 +1,18 @@
+{
+    "lang": "en",
+    "unlimited_search": false,
+    "max_attempts": 25,
+    "unlimited_inventory": false,
+    "deduct_inventory": false,
+    "save_as_new_file": true,
+    "show_summary": true,
+    "summary_items_per_row": 4,
+    "data": {
+        "human": "Data/Human.csv",
+        "food": "Data/Food.csv",
+        "memory": "Data/Memory.csv",
+        "inventory": "Data/Inventory/Inventory_template.csv"
+    },
+    "log_mode": true,
+    "log_folder": "Log"
+}
